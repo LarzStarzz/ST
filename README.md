@@ -1,2 +1,2 @@
-# ST
-Senior Thesis
+# Senior Thesis
+
