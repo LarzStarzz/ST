@@ -1,0 +1,39 @@
+---
+title: "Testing"
+output: html_document
+date: "2025-02-11"
+---
+
+```{r setup, include=FALSE}
+df <- read.csv("Scores.csv")
+
+freq_table <- table(df$Name)
+print(freq_table)
+```
+
+```{r library}
+library(dplyr)
+```
+
+```{r full freq}
+#Full DATASET run, dont run again
+freq_table <- table(df$Name)
+
+freq_table <- sort(freq_table, decreasing = TRUE)
+
+#print(freq_table)
+```
+
+```{r hockey freq}
+#Filtered to hockey only
+scores <- df %>%
+  filter(Sport == 'Hockey')
+
+write.csv(scores, "Hockey_Scores.csv", row.names = FALSE)
+
+#find the most frequent tests
+#h_freq <- table(scores$Name)
+#h_freq <- sort(h_freq, decreasing = TRUE)
+#print(h_freq)
+```
+
