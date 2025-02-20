@@ -13,6 +13,8 @@ library(dplyr)
 library(lubridate)
 library(tidyr)
 library(ggplot2)
+library(caret)
+library(rsample)
 ```
 
 ```{r}
@@ -79,11 +81,21 @@ corr_data <- filter_age %>%
 
 corr_matrix <- cor(corr_data[, -1])
 
-
 ```
 
 
+```{r}
+set.seed(12345)
 
+index <- initial_split(filter_age, prop = 0.8)
+
+train <- training(index)
+test <- testing(index)
+
+write.csv(train, "train.csv", row.names = FALSE)
+write.csv(test, "test.csv", row.names = FALSE)
+
+```
 
 
 
