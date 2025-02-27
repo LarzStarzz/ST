@@ -76,12 +76,21 @@ print(model)
 ```{r train model(xgboost)}
 set.seed(12345)
 
-#fix this area
-t_matrix <- model.matrix(ranking ~ Skating + Shooting + Passing, data = train)[, -1]
+train$ranking <- as.numeric(train$ranking)
 
-xgb_model <- xgboost(data = t_matrix, label = train, nrounds = 100, objective = "multi:softmax", num_class = 4)
+train_matrix <- as.matrix(select(train, -Player.Id, -ranking))
 
+train_label <- train$ranking
 
+xgb_train <-  xgb.DMatrix(data = train_matrix, label = train_label)
+
+test$ranking <- as.numeric(test$ranking)
+
+test_matrix <- as.matrix(select(test, -Player.Id, -ranking))
+
+test_label <- test$ranking
+
+xgb_test <-  xgb.DMatrix(data = test_matrix, label = test_label)
 ```
 
 
