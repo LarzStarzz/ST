@@ -1,0 +1,83 @@
+---
+title: "model_testing"
+output: html_document
+date: "2025-03-06"
+---
+
+```{r setup, include=FALSE}
+train <- read.csv("train.csv")
+
+#test <- read.csv("test.csv")
+```
+
+```{r}
+library(xgboost)
+library(Matrix)
+library(caret)
+library(dplyr)
+```
+
+```{r}
+player_scores <- train %>%
+  group_by(Player.Id) %>%
+  summarise(across(where(is.numeric), mean, na.rm = TRUE))
+```
+
+```{r}
+player_scores$overall_score <- rowSums(player_scores[, -1])
+
+player_scores$group <- ntile(player_scores$overall_score, 5) - 1
+player_scores$group <- as.factor(player_scores$group)
+
+```
+
+```{r}
+set.seed(12345)
+
+index <- createDataPartition(player_scores$group, p = 0.8, list = FALSE)
+
+train_set <- player_scores[index, ]
+test_set <- player_scores[-index, ]
+
+train_matrix <- xgb.DMatrix(data = as.matrix(train_set[, -c(1, ncol(train_set))]), label = as.numeric(train_set$group) - 1)
+test_matrix <- xgb.DMatrix(data = as.matrix(test_set[, -c(1, ncol(test_set))]), label = as.numeric(test_set$group) - 1)
+
+```
+
+```{r}
+params <- list(
+  objective = "multi:softmax",
+  num_class = 5,
+  eval_metric = "mlogloss",
+  max_depth = 3,
+  eta = 0.3,
+  nthread = 2
+)
+
+xgb_model <- xgboost(params = params, data = train_matrix, nround = 100, verbose = 0)
+```
+
+```{r}
+predictions <- predict(xgb_model, test_matrix)
+
+predictions <- factor(predictions, levels = levels(test_set$group))
+
+m_lables <- factor(as.numeric(test_set$group) - 1, levels = levels(test_set$group))
+
+confusionMatrix(predictions, m_lables)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
