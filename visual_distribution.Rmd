@@ -1,0 +1,72 @@
+---
+title: "testing_2"
+output: html_document
+date: "2025-02-20"
+---
+
+```{r setup, include=FALSE}
+train <- read.csv("train.csv")
+
+test <- read.csv("test.csv")
+
+```
+
+
+
+```{r library}
+library(dplyr)
+library(ggplot2)
+library(caret)
+library(randomForest)
+library(xgboost)
+```
+
+```{r classes}
+
+#do this for test set
+data <- data %>%
+  mutate(Value = as.numeric(Value))
+
+groups <- quantile(train$Value, probs = c(0.2, 0.4, 0.6, 0.8), na.rm = TRUE)
+
+# 1 being below average and 5 being above average
+train <- train %>%
+  mutate(ranking = case_when(
+    Value >= groups[4] ~ "5",
+    Value >= groups[3] ~ "4",
+    Value >= groups[2] ~ "3",
+    Value >= groups[1] ~ "2",
+    TRUE ~ "1"
+  ))
+
+train$ranking <- factor(train$ranking, levels = c("1", "2", "3", "4", "5"))
+table(train$ranking)
+
+
+```
+```{r visual}
+ggplot(train, aes(x = ranking, fill = ranking)) +
+  geom_bar() +
+  labs(title = "Player Rankings Distribution", x = "Ranking", y = "num") +
+  theme_minimal()
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

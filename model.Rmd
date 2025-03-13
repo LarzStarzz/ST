@@ -1,0 +1,146 @@
+---
+title: "model_testing"
+output: html_document
+date: "2025-03-06"
+---
+
+
+```{r setup}
+df <- read.csv("Hockey_Scores.csv")
+```
+
+```{r library}
+library(dplyr)
+library(lubridate)
+library(tidyr)
+library(ggplot2)
+library(caret)
+library(rsample)
+```
+
+```{r}
+#Selected evaluation types
+eval_types <- c("Skating", "Shooting", "Passing", "Hockey Sense", "Puck Handling", "Puck Control", "Skills", "Competitiveness")
+
+filter_scores <- df %>%
+  filter(Name %in% eval_types)
+
+```
+
+```{r}
+#Filtering
+player_scores <- filter_scores %>%
+  group_by(Player.Id) %>%
+  summarise(Value = list(Value), Name = list(Name)) %>%
+  unnest(cols = c(Value, Name))
+
+#looking at a specific player scores
+player_981 <- player_scores %>%
+  filter(Player.Id == 1148740)
+
+print(player_981)
+
+```
+
+```{r}
+#Fix to the Date
+filter_scores$Score.Date <- as.Date(filter_scores$Score.Date)
+filter_scores$Birthdate <- as.Date(filter_scores$Birthdate)
+
+#pull the year
+filter_scores$Score.Year <- format(filter_scores$Score.Date, "%Y")
+
+#Calculate the age at evaluations
+filter_scores$Age <- as.numeric(filter_scores$Score.Year) - as.numeric(format(filter_scores$Birthdate, "%Y"))
+
+
+```
+
+```{r}
+#Separate the score by year so that players evaluated over different years are separate entity
+separate_scores <- filter_scores %>%
+  arrange(Player.Id, Score.Year, Name)
+
+head(separate_scores)
+```
+```{r}
+#Find distribution of ages
+age_freq <- table(separate_scores$Age)
+age_freq <- sort(age_freq, decreasing = TRUE)
+print(age_freq)
+
+filter_age <- separate_scores %>%
+  filter(Age >= 10 & Age <= 12)
+```
+
+
+
+```{r}
+player_scores <- filter_age %>%
+  group_by(Player.Id) %>%
+  summarise(across(where(is.numeric), mean, na.rm = TRUE))
+```
+
+```{r}
+#Creating the classes
+player_scores$overall_score <- rowSums(player_scores[, -1])
+
+player_scores$group <- ntile(player_scores$overall_score, 5) - 1
+player_scores$group <- as.factor(player_scores$group)
+
+```
+
+```{r}
+set.seed(12345)
+
+#Train test split 80/20
+index <- createDataPartition(player_scores$group, p = 0.8, list = FALSE)
+
+train_set <- player_scores[index, ]
+test_set <- player_scores[-index, ]
+
+#Martrix for XGBoost
+train_matrix <- xgb.DMatrix(data = as.matrix(train_set[, -c(1, ncol(train_set))]), label = as.numeric(train_set$group) - 1)
+test_matrix <- xgb.DMatrix(data = as.matrix(test_set[, -c(1, ncol(test_set))]), label = as.numeric(test_set$group) - 1)
+
+```
+
+```{r}
+#Parameters for the model
+params <- list(
+  objective = "multi:softmax",
+  num_class = 5,
+  eval_metric = "mlogloss",
+  max_depth = 3,
+  eta = 0.3,
+  nthread = 2
+)
+
+xgb_model <- xgboost(params = params, data = train_matrix, nround = 100, verbose = 0)
+```
+
+```{r}
+predictions <- predict(xgb_model, test_matrix)
+
+predictions <- factor(predictions, levels = levels(test_set$group))
+
+m_lables <- factor(as.numeric(test_set$group) - 1, levels = levels(test_set$group))
+
+#To see the performance
+confusionMatrix(predictions, m_lables)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
