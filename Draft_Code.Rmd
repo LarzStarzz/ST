@@ -1,0 +1,97 @@
+---
+title: "Draft_code"
+output: html_document
+date: "2025-03-12"
+---
+
+```{r setup}
+#Don't run if you dont need to
+df <- read.csv("Hockey_Scores.csv")
+```
+
+```{r library}
+library(dplyr)
+library(lubridate)
+library(tidyr)
+library(caret)
+library(rsample)
+library(xgboost)
+library(Matrix)
+```
+```{r}
+eval_types <- c("Skating", "Shooting", "Passing", "Hockey Sense", "Puck Handling", "Puck Control", "Skills", "Competitiveness")
+
+# Convert date columns to Date type
+df$Score.Date <- as.Date(df$Score.Date)
+df$Birthdate <- as.Date(df$Birthdate)
+
+# Extract birth year and evaluation year
+df$Score.Year <- year(df$Score.Date)
+df$Birth.Year <- year(df$Birthdate)
+
+# Calculate Age
+df$Age <- df$Score.Year - df$Birth.Year
+
+# Filter for Male players aged 10-12
+filtered_players <- df %>%
+  filter(Age >= 10 & Age <= 12, Gender == "Male")
+
+# Ensure Value is numeric and remove NAs
+filtered_players <- filtered_players %>%
+  mutate(Value = as.numeric(Value)) %>%
+  drop_na(Value)
+
+# Compute unique quantiles for ranking
+quantiles <- unique(quantile(filtered_players$Value, probs = seq(0, 1, by = 0.1), na.rm = TRUE))
+
+# Ensure there are exactly 11 breakpoints
+if (length(quantiles) < 11) {
+  quantiles <- seq(min(filtered_players$Value, na.rm = TRUE), max(filtered_players$Value, na.rm = TRUE), length.out = 11)
+}
+
+# Assign ranking
+filtered_players <- filtered_players %>%
+  mutate(Ranking = cut(Value, breaks = quantiles, labels = 1:10, include.lowest = TRUE))
+
+# Display the first few rows
+head(filtered_players)
+```
+
+
+```{r clean}
+print(table(filtered_players$Ranking))
+
+# Visualize rankings with a histogram
+ggplot(filtered_players, aes(x = Ranking)) +
+  geom_bar(fill = "steelblue", color = "black") +
+  labs(title = "Distribution of Player Rankings", x = "Ranking Group", y = "Count") +
+  theme_minimal()
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
