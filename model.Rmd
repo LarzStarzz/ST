@@ -16,6 +16,7 @@ library(tidyr)
 library(ggplot2)
 library(caret)
 library(rsample)
+library(xgboost)
 ```
 
 ```{r}
@@ -63,6 +64,7 @@ separate_scores <- filter_scores %>%
 
 head(separate_scores)
 ```
+
 ```{r}
 #Find distribution of ages
 age_freq <- table(separate_scores$Age)
@@ -80,6 +82,8 @@ player_scores <- filter_age %>%
   group_by(Player.Id) %>%
   summarise(across(where(is.numeric), mean, na.rm = TRUE))
 ```
+
+
 
 ```{r}
 #Creating the classes
@@ -132,7 +136,25 @@ confusionMatrix(predictions, m_lables)
 
 ```
 
+```{r}
+cm <- confusionMatrix(predictions, m_lables)
 
+#confusion matrix table
+cm_table <- cm$table
+cm_df <- as.data.frame(as.table(cm_table))
+colnames(cm_df) <- c("Predicted", "Actual", "Freq")
+
+#heatmap of predictions
+ggplot(cm_df, aes(Predicted, Actual, fill = Freq)) +
+  geom_tile() +
+  scale_fill_gradient(low = "white", high = "purple") +
+  geom_text(aes(label = Freq), color = "black") +
+  theme_minimal() +
+  labs(x = "Predicted", y = "Actual", title = "Confusion Matrix Heatmap") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+
+```
 
 
 
