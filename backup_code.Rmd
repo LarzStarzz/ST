@@ -140,7 +140,6 @@ predictions <- factor(predictions, levels = levels(test_set$group))
 
 m_lables <- factor(as.numeric(test_set$group) - 1, levels = levels(test_set$group))
 
-#To see the performance
 confusionMatrix(predictions, m_lables)
 
 
